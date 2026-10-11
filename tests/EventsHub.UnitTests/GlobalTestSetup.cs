@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using EventsHub.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,9 +11,9 @@ public class GlobalTestSetup
     [OneTimeSetUp]
     public async Task Setup()
     {
-        DbContextOptions<AppDbContext> options =
+        DbContextOptions<AppDbContext> options = 
             new DbContextOptionsBuilder<AppDbContext>()
-                .UseSqlite("Data Source=eventshub.db")
+                .UseSqlite("Data source=eventshub.db")
                 .Options;
         AppDbContext = new AppDbContext(options);
         await AppDbContext.Database.MigrateAsync();

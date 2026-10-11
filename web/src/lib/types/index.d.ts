@@ -4,9 +4,9 @@ type Activity = {
     date: string;
     description: string;
     category: string;
-    isCanceller: boolean;
+    isCancelled: boolean;
     city: string;
     venue: string;
     latitude: number;
-    longitude: number;  
+    longitude: number;
 }

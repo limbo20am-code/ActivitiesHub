@@ -1,54 +1,47 @@
-# EventsHub — Web
+# EventsHub
 
-The React frontend for EventsHub. Independent app in the same repo as the
-.NET backend (`../src`) — separate build, separate package manager, only
-connected to it via HTTP at runtime. See
-[`../docs/Architecture.md`](../docs/Architecture.md) for how the two fit
-together.
+School project (ICI 2026 01): a .NET 10 backend with a React frontend, kept as
+two independent apps in one repo — there is no shared build.
 
-## Stack
+| Path | What it is | README |
+|---|---|---|
+| `src/EventsHub.Api` | ASP.NET Core Web API — the only backend piece in the runtime request path | [README](src/EventsHub.Api/README.md) |
+| `src/EventsHub.Application` | MediatR commands/queries and handlers (the use cases) | [README](src/EventsHub.Application/README.md) |
+| `src/EventsHub.Domain` | The `Event` entity | [README](src/EventsHub.Domain/README.md) |
+| `src/EventsHub.Persistence` | EF Core `AppDbContext`, migrations, seed data (SQLite) | [README](src/EventsHub.Persistence/README.md) |
+| `src/EventsHub.OpenApi` | Standalone host that generates the OpenAPI document and typed client | [README](src/EventsHub.OpenApi/README.md) |
+| `web/` | React 19 + Vite + MUI single-page app | [README](web/README.md) |
+| `tests/` | NUnit unit tests and a Bruno HTTP collection | see the Api README |
+| `docs/` | Architecture write-ups and course-material guides | [Architecture](docs/Architecture.md) |
 
-Vite 8 + React 19 + TypeScript, MUI 9 (`@mui/material`, `@mui/icons-material`,
-`@fontsource/roboto`) for UI, `axios` for HTTP. ESLint (flat config) with
-`typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`.
-The React Compiler is enabled via `@rolldown/plugin-babel` in `vite.config.ts`.
-`vite-plugin-mkcert` issues a local dev cert so the dev server can run on
-`https://localhost:3000` (the origin the backend's CORS policy allows).
+## How the pieces connect
 
-## Running it
+```
+web (React)  --HTTP-->  EventsHub.Api  --MediatR-->  EventsHub.Application  -->  EventsHub.Persistence  -->  SQLite
+                         controllers                   handlers                    AppDbContext               eventshub.db
+                                                             \__ EventsHub.Domain (Event) used by every layer
+EventsHub.OpenApi --loads Api assembly--> OpenAPI JSON --NSwag--> typed client   (build-time only)
+```
+
+- A controller in `EventsHub.Api` builds a MediatR command or query and sends
+  it through `Mediator` (from `EventsHubBaseController`).
+- The matching handler in `EventsHub.Application` uses `AppDbContext`
+  directly (no repository layer) and returns `Event` objects, which are also
+  the API response shape.
+- `EventsHub.Api` references only `EventsHub.Application`; it reaches
+  `Persistence` and `Domain` through that project reference.
+
+## Quick start
 
 ```powershell
+# backend (https://localhost:5001)
+dotnet run --project src/EventsHub.Api
+
+# frontend (https://localhost:3000)
 cd web
 npm install
-npm run dev       # https://localhost:3000
-npm run build     # tsc -b && vite build
-npm run lint       # eslint .
-npm run preview   # preview a production build
-The dev server expects the backend running at `https://localhost:5001`
-(`dotnet run --project ../src/EventsHub.Api`) — there's no proxy config, the
-frontend calls that absolute URL directly.
+npm run dev
+```
 
-## Current state / known rough edges
-
-This is an early-stage app — worth knowing before extending it:
-
-- **`src/App.tsx`** fetches `https://localhost:5001/api/v1/events` with the
-  URL hardcoded inline (`axios.get<Activity[]>(...)`). There's no `.env` /
-  `import.meta.env` base-URL config yet — if you add more API calls or need
-  this to work against a non-`localhost:5001` backend, that's the first gap
-  to close.
-- **`src/lib/types/index.d.ts`** declares shared types as *ambient* `type`
-  declarations (e.g. `Activity`, which mirrors the backend's `Event`
-  entity/DTO — the frontend hasn't been renamed to match yet). Being a
-  `.d.ts` ambient declaration file, these types are globally available with
-  no `import` statement; add new shared types here the same way rather than
-  introducing per-file local type definitions for shapes coming from the API.
-- No routing, no state management library, and no test setup yet — `App.tsx`
-  is the entire UI (a title + a flat MUI `List` of events).
-
-## Project layout
-
-- `src/App.tsx` — the app's only component right now
-- `src/lib/types/` — ambient shared TypeScript types
-- `src/assets/` — static assets bundled by Vite
-- `public/` — static assets served as-is (e.g. `favicon.svg`)
+Other commands (build, tests, EF migrations, OpenAPI regeneration) are listed
+in the READMEs above and in [`CLAUDE.md`](CLAUDE.md).

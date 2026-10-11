@@ -37,7 +37,7 @@ namespace EventsHub.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<bool>("IsCanceller")
+                    b.Property<bool>("IsCancelled")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Latitude")
